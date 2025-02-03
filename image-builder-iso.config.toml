@@ -1,5 +1,6 @@
 [customizations.installer.kickstart]
 contents = """
+text
 %post --erroronfail
 bootc switch --mutate-in-place --transport registry ghcr.io/perchnet/homeserver:latest
 %end
