@@ -1,4 +1,5 @@
 #!/bin/bash
+# shellcheck disable=SC2174 # "-p -m only applies to deepest subdirectory" because /var and /etc already exist
 
 set -ouex pipefail
 
@@ -7,11 +8,11 @@ mkdir -m 0700 -p /var/roothome
 # Fast track https://gitlab.com/fedora/bootc/base-images/-/merge_requests/71
 ln -sf /run /var/run
 # Required for Logically Bound images, see https://gitlab.com/fedora/bootc/examples/-/tree/main/logically-bound-images/usr/share/containers/systemd
-ln -sr /etc/containers/systemd/*.container /usr/lib/bootc/bound-images.d/
+# ln -sr /etc/containers/systemd/*.container /usr/lib/bootc/bound-images.d/
 
 # Packages
 
-dnf install -y avahi cockpit cockpit-machines cockpit-podman cockpit-files libvirt tmux vim firewalld
+dnf install -y avahi cockpit cockpit-machines cockpit-podman cockpit-files libvirt tmux vim firewalld yq # yq is for scripts/komodo/files/initialize_komodo.sh
 
 # Docker install: https://docs.docker.com/engine/install/centos/#install-using-the-repository
 dnf config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
@@ -23,11 +24,18 @@ dnf config-manager --set-disabled tailscale-stable
 dnf -y --enablerepo tailscale-stable install \
   tailscale
 
+
+
+
+# Komodo
+cd scripts/komodo
+./bootstrap_komodo.sh
+
 # Services
 
 systemctl enable podman.socket
 systemctl enable cockpit.socket
-systemctl enable rpm-ostreed-automatic.timer 
+systemctl enable rpm-ostreed-automatic.timer
 systemctl enable tailscaled.service
 systemctl disable auditd.service
 systemctl enable docker.service

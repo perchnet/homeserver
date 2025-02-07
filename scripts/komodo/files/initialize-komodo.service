@@ -1,0 +1,11 @@
+[Unit]
+Description=Initialize Komodo configuration and secrets
+# ConditionPathExists=!/etc/komodo/initialized # commented out because this logic is internal to the script
+After=network-online.target
+Wants=network-online.target
+[Service]
+Type=oneshot
+StandardOutput=journal+console
+ExecStart=/usr/share/komodo/initialize_komodo.sh
+[Install]
+WantedBy=multi-user.target

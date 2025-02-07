@@ -1,0 +1,18 @@
+[Unit]
+Description=Bring up the Komodo Core service with docker compose
+After=docker.service
+Requires=docker.service
+ConditionPathExists=!/etc/komodo/core/started
+ConditionPathExists=/etc/ucore-autorebase/signed
+
+[Service]
+Type=oneshot
+Restart=on-failure
+StandardOutput=journal
+StandardError=journal
+WorkingDirectory=/etc/komodo/core
+ExecStart=/usr/bin/docker compose -p komodo -f /etc/komodo/core/compose.yml -f /etc/komodo/core/compose.override.yml --env-file /etc/komodo/core/core.env up -d
+ExecStartPost=/usr/bin/touch /etc/komodo/core/started
+
+[Install]
+WantedBy=multi-user.target
