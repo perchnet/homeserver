@@ -5,13 +5,11 @@ on:
     branches:
       - main
   schedule:
-    - cron: '05 10 * * *'  # 10:05am UTC everyday
-  merge_group:  
+    - cron: "05 10 * * *" # 10:05am UTC everyday
+  merge_group:
   push:
-    branches:
-      - main
     paths-ignore:
-      - '**/README.md'
+      - "**/README.md"
   workflow_dispatch:
 
 env:
@@ -38,23 +36,65 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-      
+
       - name: Get current date
         id: date
         run: |
+          #!/usr/bin/env bash
+          set -euxo pipefail
+          # save the date, because we want any generated times to match
+          unixtime="$(date -u +%s)"
           # Should generate a timestamp like what is defined on the ArtifactHub documentation
+          artifacthub_style="+%Y-%m-%dT%H:%M:%SZ"
           # E.G: 2022-02-08T15:38:15Z'
           # https://artifacthub.io/docs/topics/repositories/container-images/
           # https://linux.die.net/man/1/date
-          echo "date=$(date -u +%Y\-%m\-%d\T%H\:%M\:%S\Z)" >> $GITHUB_OUTPUT
+          echo "artifacthub_style=$(date -u ${artifacthub_style} -d @"${unixtime}")" | tee -a $GITHUB_OUTPUT
+          yyyymmdd_style="+%Y%m%d"
+          echo "yyyymmdd=$(date -u "${yyyymmdd_style}" -d @"${unixtime}")" | tee -a $GITHUB_OUTPUT
+
+      - name: Generate tags
+        id: tags
+        run: |
+          #!/usr/bin/env bash
+          set -euxo pipefail
+          slash='/'
+          underscore='_'
+          # Generate primary and ref tags for the image
+          ref_name="${{ github.ref_name }}"
+          case ${{ github.event_name }} in
+          "pull_request")
+            # ref_name=<pr_number>/merge
+            pr_number=${ref_name%%/*}
+            primary_tag="latest-pr-${pr_number}"
+            ref_tag="pr-${pr_number}.${{ steps.date.outputs.yyyymmdd }}"
+          ;;
+          "push")
+            branch_name="${ref_name}"
+            if [[ "${branch_name}" == "${{ github.event.repository.default_branch }}" ]]; then
+              primary_tag="latest"
+            else
+              primary_tag="latest-${ref_name//"${slash}"/"${underscore}"}"
+            fi
+            ref_tag="${ref_name//"${slash}"/"${underscore}"}.${{ steps.date.outputs.yyyymmdd }}"
+          ;;
+          "*")
+            primary_tag="$(date '+%s')"
+            ref_tag="$(date r'+%s')"
+          ;;
+          esac
+          echo "primary_tag=${primary_tag}" | tee -a $GITHUB_OUTPUT
+          echo "ref_tag=${ref_tag}" | tee -a $GITHUB_OUTPUT
 
       - name: Image Metadata
         uses: docker/metadata-action@369eb591f429131d6889c46b94e711f089e6ca96 # v5
         id: metadata
         with:
           tags: |
-            type=raw,value=latest
-            type=raw,value=latest.{{date 'YYYYMMDD'}}
+            type=raw,value=${{ steps.tags.outputs.primary_tag }}
+            type=raw,value=${{ steps.tags.outputs.primary_tag }}.${{ steps.date.outputs.yymmdd }}
+            type=raw,value=${{ steps.tags.outputs.ref_tag }}
+            type=raw,value=${{ steps.tags.outputs.ref_tag }}.${{ steps.date.outputs.yymmdd }}
             type=raw,value={{date 'YYYYMMDD'}}
             type=raw,value=${{ env.CENTOS_VERSION }}
             type=raw,value=${{ env.CENTOS_VERSION }}.{{date 'YYYYMMDD'}}
@@ -62,7 +102,7 @@ jobs:
             type=ref,event=pr
           labels: |
             io.artifacthub.package.readme-url=https://raw.githubusercontent.com/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}/refs/heads/main/README.md
-            org.opencontainers.image.created=${{ steps.date.outputs.date }}
+            org.opencontainers.image.created=${{ steps.date.outputs.artifacthub_style }}
             org.opencontainers.image.description=${{ env.IMAGE_DESC }}
             org.opencontainers.image.documentation=https://raw.githubusercontent.com/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}/refs/heads/main/README.md
             org.opencontainers.image.source=https://github.com/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}/blob/main/Containerfile
@@ -95,7 +135,7 @@ jobs:
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3
-        if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+        if: github.event_name != 'pull_request'
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -103,7 +143,7 @@ jobs:
 
       - name: Push To GHCR
         uses: redhat-actions/push-to-registry@5ed88d269cf581ea9ef6dd6806d01562096bee9c # v2
-        if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+        if: github.event_name != 'pull_request'
         id: push
         with:
           registry: ${{ env.IMAGE_REGISTRY }}
@@ -112,10 +152,10 @@ jobs:
 
       - name: Install Cosign
         uses: sigstore/cosign-installer@dc72c7d5c4d10cd6bcb8cf6e3fd625a9e5e537da # v3.7.0
-        if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+        if: github.event_name != 'pull_request'
 
       - name: Sign container image
-        if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+        if: github.event_name != 'pull_request'
         run: |
           IMAGE_FULL="${{ env.IMAGE_REGISTRY }}/${IMAGE_NAME}"
           for tag in ${{ steps.metadata.outputs.tags }}; do
