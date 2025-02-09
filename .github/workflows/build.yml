@@ -78,7 +78,11 @@ jobs:
             fi
             ref_tag="${ref_name//"${slash}"/"${underscore}"}.${{ steps.date.outputs.yyyymmdd }}"
           ;;
-          "*")
+          "schedule")
+            primary_tag="nightly"
+            ref_tag="nightly.${{ steps.date.outputs.yyyymmdd }}"
+          ;;
+          *)
             primary_tag="$(date '+%s')"
             ref_tag="$(date r'+%s')"
           ;;
