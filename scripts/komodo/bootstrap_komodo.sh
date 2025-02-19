@@ -448,6 +448,8 @@ update_env_key "ExecStart" "${KOMODO_SHARE_DIR}/initialize_komodo.sh" "${INITIAL
 cp "files/komodo-core-up.service" "files/komodo-core-logs.service" "files/komodo-periphery.service" "${PREFIX}/etc/systemd/system/"
 update_env_key "EnvironmentFile" "${KOMODO_CORE_ENV_FILE}" "${KOMODO_CORE_SERVICE}"
 update_env_key "EnvironmentFile" "${KOMODO_PERIPHERY_ENV_FILE}" "${KOMODO_PERIPHERY_SERVICE}"
+update_env_key "WorkingDirectory" "${KOMODO_CONFIG_DIR_CORE}" "${KOMODO_CORE_SERVICE}"
+update_env_key "WorkingDirectory" "${KOMODO_CONFIG_DIR_PERIPHERY}" "${KOMODO_PERIPHERY_SERVICE}"
 
 # Services
 if [[ -z "${PREFIX}" ]] ; then
