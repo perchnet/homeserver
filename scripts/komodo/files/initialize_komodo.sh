@@ -159,10 +159,10 @@ update_env_files() {
 }
 
 }
-MAIN() {
+main() {
     # set functions
     set_functions
-    SET_CONFIG_VARS # load variables
+    set_config_vars # load variables
 
 if [[ -f "${CANARY_FILE}" ]]; then
     echo "Secrets have already been initialized for Komodo. Exiting..."
@@ -179,4 +179,4 @@ fi
     chmod 644 "${CANARY_FILE}"
 }
 
-    MAIN "$@"
+    main "$@"

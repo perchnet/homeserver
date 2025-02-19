@@ -12,15 +12,15 @@ ln -sf /run /var/run
 
 # Packages
 packages=(
-#   avahi
+  avahi
   cockpit
-#   cockpit-machines
-#   cockpit-podman
-#   cockpit-files
-#   libvirt
-#   tmux
-#   vim
-#   firewalld
+  #cockpit-machines
+  cockpit-podman
+  cockpit-files
+  #libvirt
+  #tmux
+  vim
+  firewalld
   jq
 )
 dnf install -y "${packages[@]}"
