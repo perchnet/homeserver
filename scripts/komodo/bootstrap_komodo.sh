@@ -251,6 +251,23 @@ create_directories() {
 
 download_compose_yaml() {
   fetch_url "${KOMODO_COMPOSE_YAML}" | yq 'del(.services.periphery)' > "${KOMODO_DEFAULT_CONFIG_DIR_CORE}/compose.yaml" # Remove periphery service, because we're running that natively (via systemd instead of docker{,-compose})
+  >"${KOMODO_DEFAULT_CONFIG_DIR_CORE}/compose.override.yml" tee -a <<EOF
+services:
+  core:
+    logging:
+      driver: "${COMPOSE_LOGGING_DRIVER}"
+    volumes:
+      ## Core cache for repos for latest commit hash / contents
+      - "${KOMODO_CACHE_DIR_CORE}/repo-cache:/repo-cache"
+      ## Store sync files on server
+      - "${KOMODO_DATA_DIR_CORE}/syncs:/syncs"
+      ## Optionally mount a custom core.config.toml
+      - "${KOMODO_CORE_DEFAULT_CONFIG}:/config/config.toml"
+    ## Allows for systemd Periphery connection at
+    ## "http://host.docker.internal:8120"
+    extra_hosts:
+      - host.docker.internal:host-gateway
+EOF
 }
 
 download_env() {
