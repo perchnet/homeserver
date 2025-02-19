@@ -27,7 +27,6 @@ KOMODO_ENV="${KOMODO_ENV:-"${KOMODO_REPO_URL_BASE}/compose/compose.env"}"
 
 KOMODO_CORE_DEFAULT_CONFIG="${KOMODO_CORE_DEFAULT_CONFIG:-"${KOMODO_REPO_URL_BASE}/config/core.config.toml"}"
 PERIPHERY_DEFAULT_CONFIG="${PERIPHERY_DEFAULT_CONFIG:-"${KOMODO_REPO_URL_BASE}/config/periphery.config.toml"}"
-PERIPHERY_CONFIG_PATH="${PERIPHERY_CONFIG_PATH:-"/etc/komodo/periphery/periphery.config.toml"}"
 ###
 
 ################################################################################
@@ -63,6 +62,13 @@ KOMODO_CONFIG_DIR_PERIPHERY="${KOMODO_CONFIG_DIR_PERIPHERY:-"${KOMODO_CONFIG_DIR
 KOMODO_CONFIG_DIRS_PERIPHERY=(
   "${KOMODO_CONFIG_DIR_PERIPHERY}/"
 )
+
+
+CORE_DEFAULT_CONFIG_PATH="${KOMODO_DEFAULT_CONFIG_DIR_CORE}/core.config.toml"
+CORE_CONFIG_PATH="${KOMODO_CONFIG_DIR_CORE}/core.config.toml"
+
+PERIPHERY_DEFAULT_CONFIG_PATH="${KOMODO_DEFAULT_CONFIG_DIR_PERIPHERY}/periphery.config.toml"
+PERIPHERY_CONFIG_PATH="${KOMODO_CONFIG_DIR_PERIPHERY}/periphery.config.toml"
 
 # Where to put tmpfiles.d files
 TMPFILES_DIR="${TMPFILES_DIR:-"${PREFIX}/usr/lib/tmpfiles.d"}"
@@ -265,10 +271,10 @@ services:
       ## Store sync files on server
       - "${KOMODO_DATA_DIR_CORE}/syncs:/syncs"
       ## Optionally mount a custom core.config.toml
-      - "${KOMODO_CORE_DEFAULT_CONFIG}:/config/config.toml"
+      - "${KOMODO_CORE_DEFAULT_CONFIG_FILE}:/config/config.toml"
+    ## Allows for systemd Periphery connection at
+    ## "http://host.docker.internal:8120"
     extra_hosts:
-      ## Allows for systemd Periphery connection at
-      ## "http://host.docker.internal:8120"
       - host.docker.internal:host-gateway
 
 EOF
@@ -283,12 +289,12 @@ set_first_server() {
 }
 
 download_core_default_config() {
-  fetch_url "${KOMODO_CORE_DEFAULT_CONFIG}" > "${KOMODO_DEFAULT_CONFIG_DIR_CORE}/core.config.toml"
+  fetch_url "${KOMODO_CORE_DEFAULT_CONFIG}" > "${CORE_DEFAULT_CONFIG_PATH}"
 }
 
 
 download_periphery_default_config() {
-  fetch_url "${PERIPHERY_DEFAULT_CONFIG}" > "${KOMODO_DEFAULT_CONFIG_DIR_PERIPHERY}/periphery.config.toml"
+  fetch_url "${PERIPHERY_DEFAULT_CONFIG}" > "${PERIPHERY_DEFAULT_CONFIG_PATH}"
 }
 
 download_periphery_binary() {
@@ -357,11 +363,11 @@ done
 #install -vDm "${KOMODO_PERMS_NORMAL}" "${KOMODO_COMPOSE_YAML_FILE}" "${KOMODO_CONFIG_DIR_CORE}/compose.yml"
 install -vDm "${KOMODO_PERMS_NORMAL}" "${KOMODO_DEFAULT_COMPOSE_YAML_OVERRIDE_FILE}" "${KOMODO_COMPOSE_YAML_OVERRIDE_FILE}"
 
-# install default core config
-install -vDm "${KOMODO_PERMS_NORMAL}" "${KOMODO_DEFAULT_CONFIG_DIR_CORE}/core.config.toml" "${KOMODO_CONFIG_DIR_CORE}/core.config.toml"
+# install core config
+install -vDm "${KOMODO_PERMS_NORMAL}" "${CORE_DEFAULT_CONFIG_PATH}" "${CORE_CONFIG_PATH}"
 
 # install default periphery config
-install -vDm "${KOMODO_PERMS_NORMAL}" "${KOMODO_DEFAULT_CONFIG_DIR_PERIPHERY}/periphery.config.toml" "${KOMODO_CONFIG_DIR_PERIPHERY}/periphery.config.toml"
+install -vDm "${KOMODO_PERMS_NORMAL}" "${PERIPHERY_DEFAULT_CONFIG_PATH}" "${PERIPHERY_CONFIG_PATH}"
 
 mkdir -v -p -m "${KOMODO_PERMS_DIR_PUBLIC}" "${KOMODO_DATA_DIR_BASE}"
 
@@ -450,6 +456,7 @@ for key in \
   KOMODO_CORE_ENV_FILE \
   KOMODO_PERIPHERY_ENV_FILE \
   PERIPHERY_CONFIG_PATH \
+  PERIPHERY_DEFAULT_CONFIG_PATH \
   KOMODO_SHARE_DIR \
   KOMODO_USER \
   KOMODO_GROUP \
