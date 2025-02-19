@@ -250,7 +250,7 @@ create_directories() {
 }
 
 download_compose_yaml() {
-  fetch_url "${KOMODO_COMPOSE_YAML}" | yq 'del(.services.periphery)' > "${KOMODO_DEFAULT_CONFIG_DIR_CORE}/compose.yaml" # Remove periphery service, because we're running that natively (via systemd instead of docker{,-compose})
+  fetch_url "${KOMODO_COMPOSE_YAML}" | yq 'del(.services.periphery)' > "${KOMODO_DEFAULT_CONFIG_DIR_CORE}/compose.yml" # Remove periphery service, because we're running that natively (via systemd instead of docker{,-compose})
   >"${KOMODO_DEFAULT_CONFIG_DIR_CORE}/compose.override.yml" tee -a <<EOF
 services:
   core:
