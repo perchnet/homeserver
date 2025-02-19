@@ -3,7 +3,7 @@
 # Komodo Core & local Periphery server via systemd
 # vaguely adapted from https://komo.do/docs/setup/mongo
 set -euo pipefail
-# set -x
+set -x
 
 
 ################################################################################
@@ -113,7 +113,7 @@ KOMODO_CACHE_DIRS_PERIPHERY=(
 # Services dirs
 KOMODO_SERVICES_DIR="${KOMODO_SERVICES_DIR:-"${PREFIX}/etc/systemd/system"}"
 INITIALIZE_KOMODO_SERVICE="${INITIALIZE_KOMODO_SERVICE:-"${KOMODO_SERVICES_DIR}/initialize-komodo.service"}"
-KOMODO_CORE_SERVICE="${KOMODO_CORE_SERVICE:-"${KOMODO_SERVICES_DIR}/komodo-core.service"}"
+KOMODO_CORE_SERVICE="${KOMODO_CORE_SERVICE:-"${KOMODO_SERVICES_DIR}/komodo-core-up.service"}"
 KOMODO_CORE_LOGS_SERVICE="${KOMODO_CORE_LOGS_SERVICE:-"${KOMODO_SERVICES_DIR}/komodo-core-logs.service"}"
 KOMODO_PERIPHERY_SERVICE="${KOMODO_PERIPHERY_SERVICE:-"${KOMODO_SERVICES_DIR}/komodo-periphery.service"}"
 
@@ -135,17 +135,20 @@ KOMODO_PERMS_DIR_PUBLIC="${KOMODO_PERMS_DIR_PUBLIC:-"0755"}"
 KOMODO_PERMS_EXECUTABLE="${KOMODO_PERMS_EXECUTABLE:-"0755"}"
 KOMODO_PERMS_NORMAL="${KOMODO_PERMS_NORMAL:-"0644"}"
 
+EXIT_FAILURE=1
+
 ################################################################################
 ### Functions ##################################################################
 ################################################################################
 
-## CRUD functions for env files
+# escape slashes in string
 escape_slashes() {
     local str
     str="${1}"
     echo "${str//"/"/"\/"}"
 }
 
+## CRUD functions for env files
 delete_env_key() {
     local key file
     key="${1}"
@@ -200,29 +203,59 @@ update_env_key() {
     fi
 }
 
-
 fetch_url() {
   local url="${1}"
   curl -L "${url}"
+}
+
+# get the latest yq binary from github
+setup_yq() {
+  local repo arch
+  repo="mikefarah/yq"
+  arch="${SYSTEM_ARCH}"
+  case "${arch}" in
+    x86_64)
+      arch="amd64"
+      ;;
+    aarch64)
+      arch="arm64"
+      ;;
+    *)
+      echo "Maybe unsupported architecture: ${arch}"
+      ;;
+  esac
+  URL="https://github.com/mikefarah/yq/releases/download/v4.45.1/yq_linux_${arch}"
+  fetch_url "${URL}" > /usr/bin/yq
+  chmod +x /usr/bin/yq
+  chown root:root /usr/bin/yq
+
+
+}
+
+create_directories() {
+  # Create directories
+  # Since this is an atomic distro, anything under /var needs to be created by a tmpfiles.d file.
+  # This is because directories under /var will not be initialized from the container image.
+
+  # default dirs
+  for dir in \
+    "${KOMODO_DEFAULT_CONFIG_DIR_BASE}" \
+    "${KOMODO_DEFAULT_CONFIG_DIRS_CORE[@]}" \
+    "${KOMODO_DEFAULT_CONFIG_DIRS_PERIPHERY[@]}"
+  do
+    mkdir -v -p -m "${KOMODO_PERMS_DIR_PUBLIC}" "${dir}"
+    chown -R "${KOMODO_CHOWN}" "${dir}"
+  done
 }
 
 ################################################################################
 ### Main #######################################################################
 ################################################################################
 
-# Create directories
-# Since this is an atomic distro, anything under /var needs to be created by a tmpfiles.d file.
-# This is because directories under /var will not be initialized from the container image.
+setup_yq
 
-# default dirs
-for dir in \
-  "${KOMODO_DEFAULT_CONFIG_DIR_BASE}" \
-  "${KOMODO_DEFAULT_CONFIG_DIRS_CORE[@]}" \
-  "${KOMODO_DEFAULT_CONFIG_DIRS_PERIPHERY[@]}"
-do
-  mkdir -v -p -m "${KOMODO_PERMS_DIR_PUBLIC}" "${dir}"
-  chown -R "${KOMODO_CHOWN}" "${dir}"
-done
+create_directories
+
 
 # Download compose yaml
 fetch_url "${KOMODO_COMPOSE_YAML}" | yq 'del(.services.periphery)' > "${KOMODO_DEFAULT_CONFIG_DIR_CORE}/compose.yaml" # Remove periphery service, because we're running that natively (via systemd instead of docker{,-compose})
@@ -374,14 +407,14 @@ update_env_key "EnvironmentFile" "${INITIALIZE_KOMODO_ENV_FILE}" "${INITIALIZE_K
 update_env_key "ExecStart" "${KOMODO_DATA_DIR_BASE}/initialize_komodo.sh" "${INITIALIZE_KOMODO_SERVICE}"
 
 # Copy the systemd service files
-cp "files/komodo-core.service" "files/komodo-core-logs.service" "files/komodo-periphery.service" "${PREFIX}/etc/systemd/system/"
+cp "files/komodo-core-up.service" "files/komodo-core-logs.service" "files/komodo-periphery.service" "${PREFIX}/etc/systemd/system/"
 update_env_key "EnvironmentFile" "${KOMODO_CORE_ENV_FILE}" "${KOMODO_CORE_SERVICE}"
 update_env_key "EnvironmentFile" "${KOMODO_PERIPHERY_ENV_FILE}" "${KOMODO_PERIPHERY_SERVICE}"
 
 # Services
 if [[ -z "${PREFIX}" ]] ; then
-  systemctl enable initialize-komodo-secrets.service
-systemctl enable komodo-core.service
-systemctl enable komodo-core-logs.service
-systemctl enable komodo-periphery.service
+  systemctl enable "${INITIALIZE_KOMODO_SERVICE}"
+  systemctl enable "${KOMODO_CORE_SERVICE}"
+  systemctl enable "${KOMODO_CORE_LOGS_SERVICE}"
+  systemctl enable "${KOMODO_PERIPHERY_SERVICE}"
 fi

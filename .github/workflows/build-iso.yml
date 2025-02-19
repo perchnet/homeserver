@@ -54,7 +54,7 @@ jobs:
         uses: centos-workstation/bootc-image-builder-action@main
         with:
           config-file: ./image-builder-iso.config.toml
-          image: ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }}
+          image: ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:latest-${{ github.ref_name }}
 
       # - name: Patch ISO with our branding
       #   run: |

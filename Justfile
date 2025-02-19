@@ -138,10 +138,6 @@ _build-bib $target_image $tag $type $config: (_rootful_load_image target_image t
     args="--type ${type}"
     args+=" --use-librepo"
 
-    if [[ $target_image == localhost/* ]]; then
-      args+=" --local"
-    fi
-
     sudo podman run \
       --rm \
       -it \

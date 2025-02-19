@@ -11,12 +11,30 @@ ln -sf /run /var/run
 # ln -sr /etc/containers/systemd/*.container /usr/lib/bootc/bound-images.d/
 
 # Packages
-
-dnf install -y avahi cockpit cockpit-machines cockpit-podman cockpit-files libvirt tmux vim firewalld yq # yq is for scripts/komodo/files/initialize_komodo.sh
+packages=(
+#   avahi
+  cockpit
+#   cockpit-machines
+#   cockpit-podman
+#   cockpit-files
+#   libvirt
+#   tmux
+#   vim
+#   firewalld
+  jq
+)
+dnf install -y "${packages[@]}"
 
 # Docker install: https://docs.docker.com/engine/install/centos/#install-using-the-repository
+docker_packages=(
+  docker-ce
+  docker-ce-cli
+  containerd.io
+  docker-buildx-plugin
+  docker-compose-plugin
+)
 dnf config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
-dnf install -y docker-ce docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+dnf install -y "${docker_packages[@]}"
 
 # Tailscale
 dnf config-manager --add-repo https://pkgs.tailscale.com/stable/centos/9/tailscale.repo
@@ -24,11 +42,8 @@ dnf config-manager --set-disabled tailscale-stable
 dnf -y --enablerepo tailscale-stable install \
   tailscale
 
-
-
-
 # Komodo
-cd scripts/komodo
+cd /tmp/scripts/komodo
 ./bootstrap_komodo.sh
 
 # Services
