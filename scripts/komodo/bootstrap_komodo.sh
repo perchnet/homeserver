@@ -27,6 +27,7 @@ KOMODO_ENV="${KOMODO_ENV:-"${KOMODO_REPO_URL_BASE}/compose/compose.env"}"
 
 KOMODO_CORE_DEFAULT_CONFIG="${KOMODO_CORE_DEFAULT_CONFIG:-"${KOMODO_REPO_URL_BASE}/config/core.config.toml"}"
 PERIPHERY_DEFAULT_CONFIG="${PERIPHERY_DEFAULT_CONFIG:-"${KOMODO_REPO_URL_BASE}/config/periphery.config.toml"}"
+PERIPHERY_CONFIG_PATH="${PERIPHERY_CONFIG_PATH:-"/etc/komodo/periphery/periphery.config.toml"}"
 ###
 
 ################################################################################
@@ -398,10 +399,16 @@ for key in \
   KOMODO_DEFAULT_CONFIG_DIR_PERIPHERY \
   KOMODO_CORE_ENV_FILE \
   KOMODO_PERIPHERY_ENV_FILE \
+  PERIPHERY_CONFIG_PATH \
+  KOMODO_SHARE_DIR \
+  KOMODO_USER \
+  KOMODO_GROUP \
 ;
 do
   value="${!key}"
   update_env_key "${key}" "${value}" "${INITIALIZE_KOMODO_ENV_FILE}"
+  update_env_key "${key}" "${value}" "${KOMODO_CORE_ENV_FILE}"
+  update_env_key "${key}" "${value}" "${KOMODO_PERIPHERY_ENV_FILE}"
 done
 
 mkdir -v -p -m "${KOMODO_PERMS_DIR_PRIVATE}" "${PREFIX}/etc/systemd/system"
