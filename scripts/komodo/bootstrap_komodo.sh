@@ -278,6 +278,31 @@ download_periphery_binary() {
   chmod "${KOMODO_PERMS_EXECUTABLE}" "${KOMODO_DEFAULT_CONFIG_DIR_PERIPHERY}/periphery" "${PREFIX}/usr/bin/periphery"
 }
 
+create_base_dirs() {
+  for dir in \
+    "${KOMODO_CONFIG_DIR_BASE}" \
+    "${KOMODO_DATA_DIR_BASE}" \
+    "${KOMODO_SECRETS_DIR_BASE}" \
+    "${KOMODO_CACHE_DIR_BASE}"
+  do
+    mkdir -v -p -m "${KOMODO_PERMS_DIR_PUBLIC}" "${dir}"
+    chown -R "${KOMODO_CHOWN}" "${dir}"
+  done
+}
+
+create_core_config_dirs() {
+  for dir in "${KOMODO_CONFIG_DIRS_CORE[@]}" ; do
+    mkdir -v -p -m "${KOMODO_PERMS_DIR_PUBLIC}" "${dir}"
+    chown -R "${KOMODO_CHOWN}" "${dir}"
+  done
+}
+
+install_default_envs() {
+  for env in "${KOMODO_CORE_ENV_FILE}" "${KOMODO_PERIPHERY_ENV_FILE}"; do
+    install -vDm "${KOMODO_PERMS_EXECUTABLE}" "${KOMODO_DEFAULT_CONFIG_DIR_BASE}/default.env" "${env}"
+  done
+}
+
 ################################################################################
 ### Main #######################################################################
 ################################################################################
@@ -298,23 +323,9 @@ download_periphery_default_config
 
 download_periphery_binary
 
+create_base_dirs
 
-# create base dirs
-for dir in \
-  "${KOMODO_CONFIG_DIR_BASE}" \
-  "${KOMODO_DATA_DIR_BASE}" \
-  "${KOMODO_SECRETS_DIR_BASE}" \
-  "${KOMODO_CACHE_DIR_BASE}"
-do
-  mkdir -v -p -m "${KOMODO_PERMS_DIR_PUBLIC}" "${dir}"
-  chown -R "${KOMODO_CHOWN}" "${dir}"
-done
-
-# create core config dirs
-for dir in "${KOMODO_CONFIG_DIRS_CORE[@]}" ; do
-  mkdir -v -p -m "${KOMODO_PERMS_DIR_PUBLIC}" "${dir}"
-  chown -R "${KOMODO_CHOWN}" "${dir}"
-done
+create_core_config_dirs
 
 # install default envs
 for env in "${KOMODO_CORE_ENV_FILE}" "${KOMODO_PERIPHERY_ENV_FILE}"; do
