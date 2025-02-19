@@ -266,10 +266,11 @@ services:
       - "${KOMODO_DATA_DIR_CORE}/syncs:/syncs"
       ## Optionally mount a custom core.config.toml
       - "${KOMODO_CORE_DEFAULT_CONFIG}:/config/config.toml"
-    ## Allows for systemd Periphery connection at
-    ## "http://host.docker.internal:8120"
     extra_hosts:
+      ## Allows for systemd Periphery connection at
+      ## "http://host.docker.internal:8120"
       - host.docker.internal:host-gateway
+
 EOF
 }
 
