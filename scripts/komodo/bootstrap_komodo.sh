@@ -15,7 +15,7 @@ KOMODO_REPO_USER="${KOMODO_REPO_USER:-"moghtech"}" # formerly mbecker20
 KOMODO_REPO="${KOMODO_REPO:-"komodo"}"
 KOMODO_BRANCH="${KOMODO_BRANCH:-"main"}"
 KOMODO_REF="${KOMODO_REF:-"refs/heads/${KOMODO_BRANCH}"}"
-KOMODO_DB_KIND="${KOMODO_DB_KIND:-"mongo"}" # or postgres, or sqlite
+KOMODO_DB_KIND="${KOMODO_DB_KIND:-"sqlite"}" # or postgres, or sqlite
 KOMODO_REPO_URL_BASE="${KOMODO_REPO_URL_BASE:-"https://raw.githubusercontent.com/${KOMODO_REPO_USER}/${KOMODO_REPO}/${KOMODO_REF}"}"
 SYSTEM_ARCH="$(uname -m)"
 PERIPHERY_VERSION="${PERIPHERY_VERSION:-"latest"}"
@@ -279,7 +279,7 @@ services:
     ## "http://host.docker.internal:8120"
     extra_hosts:
       - host.docker.internal:host-gateway
-  mongo:
+  ferretdb:
     logging:
       driver: "${COMPOSE_LOGGING_DRIVER}"
 
