@@ -48,13 +48,33 @@ jobs:
 
       - name: Setup Just
         uses: extractions/setup-just@dd310ad5a97d8e7b41793f8ef055398d51ad4de6 # v2
+      - name: Patch config with github ref_name
+        run: |
+          #!/usr/bin/env bash
+          set -euxo pipefail
+          image_name="ghcr.io/perchnet/homeserver"
+          image_tag=latest
+          default_image_reference="${image_name}:${image_tag}"
+          image_reference="${IMAGE_REFERENCE:-$default_image_reference}"
+          # compare ${{ github.ref_name }} to "${{ github.event.repository.default_branch }}"
+          case "${{ github.ref_name }}" in
+            "${{ github.event.repository.default_branch }}")
+              ;;
+            *)
+              image_tag=latest-"${{ github.ref_name }}"
+              ;;
+          esac
+          image_reference="${image_name}:${image_tag}"
+          sed -i "s|${default_image_reference}|${image_reference}|g" image-builder-iso.config.toml
+          cat image-builder-iso.config.toml
+          echo "IMAGE_REFERENCE=${image_reference}" >> $GITHUB_ENV
 
       - name: Build ISO
         id: build
         uses: centos-workstation/bootc-image-builder-action@main
         with:
           config-file: ./image-builder-iso.config.toml
-          image: ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:latest-${{ github.ref_name }}
+          image: ${{ env.IMAGE_REFERENCE }}
 
       # - name: Patch ISO with our branding
       #   run: |
