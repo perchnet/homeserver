@@ -249,6 +249,35 @@ create_directories() {
   done
 }
 
+download_compose_yaml() {
+  fetch_url "${KOMODO_COMPOSE_YAML}" | yq 'del(.services.periphery)' > "${KOMODO_DEFAULT_CONFIG_DIR_CORE}/compose.yaml" # Remove periphery service, because we're running that natively (via systemd instead of docker{,-compose})
+}
+
+download_env() {
+  fetch_url "${KOMODO_ENV}" > "${KOMODO_DEFAULT_CONFIG_DIR_BASE}/default.env"
+}
+
+set_first_server() {
+  update_env_key "KOMODO_FIRST_SERVER" "${KOMODO_FIRST_SERVER}" "${KOMODO_DEFAULT_CONFIG_DIR_BASE}/default.env"
+}
+
+download_core_default_config() {
+  fetch_url "${KOMODO_CORE_DEFAULT_CONFIG}" > "${KOMODO_DEFAULT_CONFIG_DIR_CORE}/core.config.toml"
+}
+
+
+download_periphery_default_config() {
+  fetch_url "${PERIPHERY_DEFAULT_CONFIG}" > "${KOMODO_DEFAULT_CONFIG_DIR_PERIPHERY}/periphery.config.toml"
+}
+
+download_periphery_binary() {
+  fetch_url "${PERIPHERY_RELEASE_URL}" > "${KOMODO_DEFAULT_CONFIG_DIR_PERIPHERY}/periphery"
+  mkdir -v -p -m "${KOMODO_PERMS_DIR_PUBLIC}" "${PREFIX}/usr/bin"
+  ln -s "${KOMODO_DEFAULT_CONFIG_DIR_PERIPHERY}/periphery" "${PREFIX}/usr/bin/periphery"
+  # Set permissions
+  chmod "${KOMODO_PERMS_EXECUTABLE}" "${KOMODO_DEFAULT_CONFIG_DIR_PERIPHERY}/periphery" "${PREFIX}/usr/bin/periphery"
+}
+
 ################################################################################
 ### Main #######################################################################
 ################################################################################
@@ -257,30 +286,18 @@ setup_yq
 
 create_directories
 
+download_compose_yaml
 
-# Download compose yaml
-fetch_url "${KOMODO_COMPOSE_YAML}" | yq 'del(.services.periphery)' > "${KOMODO_DEFAULT_CONFIG_DIR_CORE}/compose.yaml" # Remove periphery service, because we're running that natively (via systemd instead of docker{,-compose})
+download_env
 
-# Download env
-fetch_url "${KOMODO_ENV}" > "${KOMODO_DEFAULT_CONFIG_DIR_BASE}/default.env"
+set_first_server
 
-# Set KOMODO_FIRST_SERVER in env
-update_env_key "KOMODO_FIRST_SERVER" "${KOMODO_FIRST_SERVER}" "${KOMODO_DEFAULT_CONFIG_DIR_BASE}/default.env"
+download_core_default_config
 
+download_periphery_default_config
 
-# Download core default config
-fetch_url "${KOMODO_CORE_DEFAULT_CONFIG}" > "${KOMODO_DEFAULT_CONFIG_DIR_CORE}/core.config.toml"
+download_periphery_binary
 
-# Download periphery default config
-fetch_url "${PERIPHERY_DEFAULT_CONFIG}" > "${KOMODO_DEFAULT_CONFIG_DIR_PERIPHERY}/periphery.config.toml"
-
-# Download periphery binary
-fetch_url "${PERIPHERY_RELEASE_URL}" > "${KOMODO_DEFAULT_CONFIG_DIR_PERIPHERY}/periphery"
-mkdir -v -p -m "${KOMODO_PERMS_DIR_PUBLIC}" "${PREFIX}/usr/bin"
-ln -s "${KOMODO_DEFAULT_CONFIG_DIR_PERIPHERY}/periphery" "${PREFIX}/usr/bin/periphery"
-
-# Set permissions
-chmod "${KOMODO_PERMS_EXECUTABLE}" "${KOMODO_DEFAULT_CONFIG_DIR_PERIPHERY}/periphery" "${PREFIX}/usr/bin/periphery"
 
 # create base dirs
 for dir in \
