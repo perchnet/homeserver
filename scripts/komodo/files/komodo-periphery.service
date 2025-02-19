@@ -6,7 +6,7 @@ Requires=docker.service
 [Service]
 Type=oneshot
 EnvironmentFile=/etc/komodo/periphery/periphery.env
-ExecStart=/usr/bin/periphery --config-path /etc/komodo/periphery/config.toml
+ExecStart=/usr/bin/periphery --config-path ${PERIPHERY_CONFIG_PATH}
 Restart=on-failure
 TimeoutStartSec=0
 
