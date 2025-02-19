@@ -309,6 +309,9 @@ install -vDm "${KOMODO_PERMS_NORMAL}" "${KOMODO_DEFAULT_CONFIG_DIR_CORE}/compose
 # install default core config
 install -vDm "${KOMODO_PERMS_NORMAL}" "${KOMODO_DEFAULT_CONFIG_DIR_CORE}/core.config.toml" "${KOMODO_CONFIG_DIR_CORE}/core.config.toml"
 
+# install default periphery config
+install -vDm "${KOMODO_PERMS_NORMAL}" "${KOMODO_DEFAULT_CONFIG_DIR_PERIPHERY}/periphery.config.toml" "${KOMODO_CONFIG_DIR_PERIPHERY}/periphery.config.toml"
+
 mkdir -v -p -m "${KOMODO_PERMS_DIR_PUBLIC}" "${KOMODO_DATA_DIR_BASE}"
 
 # core data dirs
