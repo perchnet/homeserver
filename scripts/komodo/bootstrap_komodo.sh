@@ -404,7 +404,7 @@ done
 mkdir -v -p -m "${KOMODO_PERMS_DIR_PRIVATE}" "${PREFIX}/etc/systemd/system"
 cp "files/initialize-komodo.service" "${PREFIX}/etc/systemd/system/"
 update_env_key "EnvironmentFile" "${INITIALIZE_KOMODO_ENV_FILE}" "${INITIALIZE_KOMODO_SERVICE}"
-update_env_key "ExecStart" "${KOMODO_DATA_DIR_BASE}/initialize_komodo.sh" "${INITIALIZE_KOMODO_SERVICE}"
+update_env_key "ExecStart" "${KOMODO_SHARE_DIR}/initialize_komodo.sh" "${INITIALIZE_KOMODO_SERVICE}"
 
 # Copy the systemd service files
 cp "files/komodo-core-up.service" "files/komodo-core-logs.service" "files/komodo-periphery.service" "${PREFIX}/etc/systemd/system/"
