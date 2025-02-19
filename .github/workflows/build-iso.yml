@@ -49,6 +49,7 @@ jobs:
       - name: Setup Just
         uses: extractions/setup-just@dd310ad5a97d8e7b41793f8ef055398d51ad4de6 # v2
       - name: Patch config with github ref_name
+        id: tags
         run: |
           #!/usr/bin/env bash
           set -euxo pipefail
@@ -68,13 +69,16 @@ jobs:
           sed -i "s|${default_image_reference}|${image_reference}|g" image-builder-iso.config.toml
           cat image-builder-iso.config.toml
           echo "IMAGE_REFERENCE=${image_reference}" >> $GITHUB_ENV
+          echo "image_reference=${image_reference}" | tee -a ${GITHUB_OUTPUT}
+          echo "IMAGE_TAG=${image_tag}" >> $GITHUB_ENV
+          echo "image_tag=${image_tag}" | tee -a ${GITHUB_OUTPUT}
 
       - name: Build ISO
         id: build
         uses: centos-workstation/bootc-image-builder-action@main
         with:
           config-file: ./image-builder-iso.config.toml
-          image: ${{ env.IMAGE_REFERENCE }}
+          image: ${{ steps.tags.outputs.image_reference }}
 
       # - name: Patch ISO with our branding
       #   run: |
@@ -91,11 +95,11 @@ jobs:
           DEFAULT_TAG: ${{ env.DEFAULT_TAG }}
         run: |
           if [ $PLATFORM == "amd64" ]; then
-            mv $OUTPUT_PATH $OUTPUT_DIRECTORY/$IMAGE_NAME-$DEFAULT_TAG.iso
-            mv $CHECKSUM_PATH $OUTPUT_DIRECTORY/$IMAGE_NAME-$DEFAULT_TAG.iso-CHECKSUM
+            mv $OUTPUT_PATH $OUTPUT_DIRECTORY/$IMAGE_NAME-${{ steps.tags.outputs.image_tag }}.iso
+            mv $CHECKSUM_PATH $OUTPUT_DIRECTORY/$IMAGE_NAME-${{ steps.tags.outputs.image_tag }}.iso-CHECKSUM
           else
-            mv $OUTPUT_PATH $OUTPUT_DIRECTORY/$IMAGE_NAME-$DEFAULT_TAG-$PLATFORM.iso
-            mv $CHECKSUM_PATH $OUTPUT_DIRECTORY/$IMAGE_NAME-$DEFAULT_TAG-$PLATFORM.iso-CHECKSUM
+            mv $OUTPUT_PATH $OUTPUT_DIRECTORY/$IMAGE_NAME-${{ steps.tags.outputs.image_tag }}-$PLATFORM.iso
+            mv $CHECKSUM_PATH $OUTPUT_DIRECTORY/$IMAGE_NAME-${{ steps.tags.outputs.image_tag }}-$PLATFORM.iso-CHECKSUM
           fi
 
       - name: Upload to Job Artifacts
