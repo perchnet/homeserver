@@ -17,7 +17,8 @@ source "${INITIALIZE_KOMODO_ENV_FILE}" # don't ignore errors this time
 set_config_vars(){
 
 # List of secrets to generate
-PASSKEY="${PASSKEY:-"$(generate_random_bytes 48)"}"
+KOMODO_PASSKEY="${PASSKEY:-"$(generate_random_bytes 48)"}"
+PERIPHERY_PASSKEYS="${PERIPHERY_PASSKEYS:-"${KOMODO_PASSKEY}"}" # use the same passkey
 DB_USERNAME="${DB_USERNAME:-"$(generate_random_bytes 48)"}"
 DB_PASSWORD="${DB_PASSWORD:-"$(generate_random_bytes 48)"}"
 WEBHOOK_SECRET="${WEBHOOK_SECRET:-"$(generate_random_bytes 48)"}"
@@ -26,12 +27,13 @@ JWT_SECRET="${JWT_SECRET:-"$(generate_random_bytes 48)"}"
 # Files to write
 CANARY_FILE="${CANARY_FILE:-"/etc/komodo/.secrets-have-been-initialized"}"
 KOMODO_CORE_ENV_FILE="${KOMODO_CORE_ENV_FILE:-"/etc/komodo/core/core.env"}"
-PERIPHERY_ENV_FILE="${PERIPHERY_ENV_FILE:-"/etc/komodo/periphery/periphery.env"}"
-PASSKEY_FILE="${PASSKEY_FILE:-"/etc/komodo/core/passkey"}"
+KOMODO_PERIPHERY_ENV_FILE="${KOMODO_PERIPHERY_ENV_FILE:-"/etc/komodo/periphery/periphery.env"}"
+#KOMODO_PASSKEY_FILE="${KOMODO_PASSKEY_FILE:-"/etc/komodo/core/passkey"}"
 DB_PASSWORD_FILE="${DB_PASSWORD_FILE:-"/etc/komodo/core/db_password"}"
 DB_USERNAME_FILE="${DB_USERNAME_FILE:-"/etc/komodo/core/db_username"}"
 WEBHOOK_SECRET_FILE="${WEBHOOK_SECRET_FILE:-"/etc/komodo/core/webhook_secret"}"
 JWT_SECRET_FILE="${JWT_SECRET_FILE:-"/etc/komodo/core/jwt_secret"}"
+#PERIPHERY_PASSKEYS_FILE="${PERIPHERY_PASSKEYS_FILE:-"/etc/komodo/periphery/passkeys"}"
 
 }
 
@@ -49,14 +51,16 @@ delete_env_key() {
     key="${1}"
     file="${2}"
     sed -i -E "/^${key}=.*/d" "${file}"
+    echo "DELETE_ENV_KEY: (${file}) ${key}"
 }
 
 replace_env_key() {
     local key value file
     key="$(escape_slashes "${1}")"
-    value="${2}"
+    value="$(escape_slashes "${2}")"
     file="${3}"
     sed -i -E "s/^#?${key}=.*/${key}=${value}/" "${file}"
+    echo "REPLACE_ENV_KEY: (${file}) ${key}=${value}"
 }
 
 add_env_key() {
@@ -74,6 +78,7 @@ add_env_key() {
         printf '%s\n' '' >>"${file}"
     fi
     echo "${key}=${value}" >>"${file}"
+    echo "ADD_ENV_KEY: (${file}) ${key}=${value}"
 }
 
 update_env_key() {
@@ -105,6 +110,7 @@ write_secret_file() {
     local secret_file_mode="${3:-600}" # default to rw-------
     printf "%s\n" "${secret_value}" >"${secret_file}"
     chmod "${secret_file_mode}" "${secret_file}"
+    echo "WRITE_SECRET_FILE: ${secret_file}"
 }
 
 update_secret_or_env_key() {
@@ -115,6 +121,7 @@ update_secret_or_env_key() {
     if [[ -n "${!secret_file_var}" ]]; then # if secret_file is set
         write_secret_file "${!secret_file_var}" "${value}"
         delete_env_key "${key}" "${file}"
+        update_env_key "${secret_file_var}" "${!secret_file_var}" "${file}"
     else
         update_env_key "${key}" "${value}" "${file}"
     fi
@@ -132,7 +139,7 @@ generate_random_bytes() {
 # function that receives one parameter, uppercases it, and then loops through all variable names that start with the parameter (using bash param expansion).
 update_env_files() {
     for key in \
-        PASSKEY \
+        KOMODO_PASSKEY \
         DB_USERNAME \
         DB_PASSWORD \
         WEBHOOK_SECRET \
@@ -141,20 +148,25 @@ update_env_files() {
      do
         local secret_file="${key}_FILE"
         local value="${!key}"
-        if [[ -n "${!secret_file}" ]]; then
-            write_secret_file "${!secret_file}" "${value}"
-        else
+        #if [[ -n "${!secret_file}" ]]; then
+        #    write_secret_file "${!secret_file}" "${value}"
+        #else
             update_env_key "${key}" "${value}" "${KOMODO_CORE_ENV_FILE}"
-        fi
+        #fi
     done
 
-    for key in "${!PERIPHERY_VARS[@]}"; do
-        local product="periphery"
-        local PRODUCT="${product^^}" # uppercase
-        local env_file_var="${PRODUCT}_ENV_FILE" # e.g., PERIPHERY_ENV_FILE
-        local env_file="${!env_file_var}" # e.g., PERIPHERY_ENV_FILE
-        value="${PERIPHERY_VARS[${key}]}"
-        update_secret_or_env_key "${key}" "${value}" "${env_file}"
+    for key in \
+        PERIPHERY_PASSKEYS \
+    ;
+     do
+        local secret_file="${key}_FILE"
+        local value="${!key}"
+        #if [[ -n "${!secret_file}" ]]; then
+        #    write_secret_file "${!secret_file}" "${value}"
+        #else
+        update_env_key "PERIPHERY_PASSKEYS" "${value}" "${KOMODO_PERIPHERY_ENV_FILE}"
+#            update_secret_or_env_key "${key}" "${value}" "${KOMODO_PERIPHERY_ENV_FILE}"
+        #fi
     done
 }
 
@@ -180,3 +192,8 @@ fi
 }
 
     main "$@"
+# echo "KOMODO_CORE_ENV_FILE: ${KOMODO_CORE_ENV_FILE}"
+# cat "${KOMODO_CORE_ENV_FILE}"
+# echo "KOMODO_PERIPHERY_ENV_FILE: ${KOMODO_PERIPHERY_ENV_FILE}"
+# cat "${KOMODO_PERIPHERY_ENV_FILE}"
+# cat "${KOMODO_COMPOSE_YAML_OVERRIDE_PATH}"

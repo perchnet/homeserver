@@ -42,10 +42,6 @@ dnf config-manager --set-disabled tailscale-stable
 dnf -y --enablerepo tailscale-stable install \
   tailscale
 
-# Komodo
-cd /tmp/scripts/komodo
-./bootstrap_komodo.sh
-
 # Services
 
 systemctl enable podman.socket

@@ -116,9 +116,10 @@ KOMODO_CACHE_DIRS_PERIPHERY=(
   # "${KOMODO_CACHE_DIR_PERIPHERY}/"
 )
 
-KOMODO_COMPOSE_YAML_FILE="${KOMODO_DEFAULT_CONFIG_DIR_CORE}/compose.yml"
-KOMODO_DEFAULT_COMPOSE_YAML_OVERRIDE_FILE="${KOMODO_DEFAULT_CONFIG_DIR_CORE}/compose.override.yml"
-KOMODO_COMPOSE_YAML_OVERRIDE_FILE="${KOMODO_COMPOSE_YAML_OVERRIDE_FILE:-"${KOMODO_CONFIG_DIR_CORE}/compose.override.yml"}"
+KOMODO_DEFAULT_COMPOSE_YAML_PATH="${KOMODO_DEFAULT_CONFIG_DIR_CORE}/compose.yml"
+KOMODO_COMPOSE_YAML_PATH="${KOMODO_COMPOSE_YAML_PATH:-"${KOMODO_CONFIG_DIR_CORE}/compose.yml"}"
+KOMODO_DEFAULT_COMPOSE_YAML_OVERRIDE_PATH="${KOMODO_DEFAULT_CONFIG_DIR_CORE}/compose.override.yml"
+KOMODO_COMPOSE_YAML_OVERRIDE_PATH="${KOMODO_COMPOSE_YAML_OVERRIDE_PATH:-"${KOMODO_CONFIG_DIR_CORE}/compose.override.yml"}"
 
 # Services dirs
 KOMODO_SERVICES_DIR="${KOMODO_SERVICES_DIR:-"${PREFIX}/etc/systemd/system"}"
@@ -129,8 +130,8 @@ KOMODO_PERIPHERY_SERVICE="${KOMODO_PERIPHERY_SERVICE:-"${KOMODO_SERVICES_DIR}/ko
 
 
 # Env files to write
-KOMODO_CORE_ENV_FILE="${KOMODO_CORE_ENV_FILE:-"${KOMODO_DEFAULT_CONFIG_DIR_CORE}/core.env"}"
-KOMODO_PERIPHERY_ENV_FILE="${KOMODO_PERIPHERY_ENV_FILE:-"${KOMODO_DEFAULT_CONFIG_DIR_PERIPHERY}/periphery.env"}"
+KOMODO_CORE_ENV_FILE="${KOMODO_CORE_ENV_FILE:-"${KOMODO_CONFIG_DIR_CORE}/core.env"}"
+KOMODO_PERIPHERY_ENV_FILE="${KOMODO_PERIPHERY_ENV_FILE:-"${KOMODO_CONFIG_DIR_PERIPHERY}/periphery.env"}"
 INITIALIZE_KOMODO_ENV_FILE="${INITIALIZE_KOMODO_ENV_FILE:-"${KOMODO_CONFIG_DIR_BASE}/initialize-komodo.env"}"
 
 # User & Group
@@ -259,10 +260,11 @@ create_directories() {
 }
 
 download_compose_yaml() {
-  fetch_url "${KOMODO_COMPOSE_YAML}" | yq 'del(.services.periphery)' > "${KOMODO_COMPOSE_YAML_FILE}" # Remove periphery service, because we're running that natively (via systemd instead of docker{,-compose})
-  tee "${KOMODO_DEFAULT_COMPOSE_YAML_OVERRIDE_FILE}" <<EOF
+  fetch_url "${KOMODO_COMPOSE_YAML}" | yq 'del(.services.periphery)' > "${KOMODO_DEFAULT_COMPOSE_YAML_PATH}" # Remove periphery service, because we're running that natively (via systemd instead of docker{,-compose})
+  tee "${KOMODO_DEFAULT_COMPOSE_YAML_OVERRIDE_PATH}" <<EOF
 services:
   core:
+    env_file: "${KOMODO_CORE_ENV_FILE}"
     logging:
       driver: "${COMPOSE_LOGGING_DRIVER}"
     volumes:
@@ -271,11 +273,15 @@ services:
       ## Store sync files on server
       - "${KOMODO_DATA_DIR_CORE}/syncs:/syncs"
       ## Optionally mount a custom core.config.toml
-      - "${KOMODO_CORE_DEFAULT_CONFIG_FILE}:/config/config.toml"
+      - "${CORE_DEFAULT_CONFIG_PATH}:/config/config.toml"
+      #- "\${KOMODO_PASSKEY_FILE}:/passkeys"
     ## Allows for systemd Periphery connection at
     ## "http://host.docker.internal:8120"
     extra_hosts:
       - host.docker.internal:host-gateway
+  mongo:
+    logging:
+      driver: "${COMPOSE_LOGGING_DRIVER}"
 
 EOF
 }
@@ -326,8 +332,9 @@ create_core_config_dirs() {
 
 install_default_envs() {
   for env in "${KOMODO_CORE_ENV_FILE}" "${KOMODO_PERIPHERY_ENV_FILE}"; do
-    install -vDm "${KOMODO_PERMS_EXECUTABLE}" "${KOMODO_DEFAULT_CONFIG_DIR_BASE}/default.env" "${env}"
+    install -vDm "${KOMODO_PERMS_PRIVATE}" "${KOMODO_DEFAULT_CONFIG_DIR_BASE}/default.env" "${env}"
   done
+  touch "${KOMODO_CONFIG_DIR_CORE}/compose.env"
 }
 
 ################################################################################
@@ -354,14 +361,17 @@ create_base_dirs
 
 create_core_config_dirs
 
+  touch "${KOMODO_DEFAULT_CONFIG_DIR_CORE}/compose.env"
+  touch "${KOMODO_CONFIG_DIR_CORE}/compose.env"
+
 # install default envs
 for env in "${KOMODO_CORE_ENV_FILE}" "${KOMODO_PERIPHERY_ENV_FILE}"; do
   install -vDm "${KOMODO_PERMS_EXECUTABLE}" "${KOMODO_DEFAULT_CONFIG_DIR_BASE}/default.env" "${env}"
 done
 
 # install default compose yaml
-#install -vDm "${KOMODO_PERMS_NORMAL}" "${KOMODO_COMPOSE_YAML_FILE}" "${KOMODO_CONFIG_DIR_CORE}/compose.yml"
-install -vDm "${KOMODO_PERMS_NORMAL}" "${KOMODO_DEFAULT_COMPOSE_YAML_OVERRIDE_FILE}" "${KOMODO_COMPOSE_YAML_OVERRIDE_FILE}"
+install -vDm "${KOMODO_PERMS_NORMAL}" "${KOMODO_DEFAULT_COMPOSE_YAML_PATH}" "${KOMODO_CONFIG_DIR_CORE}/compose.yml"
+install -vDm "${KOMODO_PERMS_NORMAL}" "${KOMODO_DEFAULT_COMPOSE_YAML_OVERRIDE_PATH}" "${KOMODO_COMPOSE_YAML_OVERRIDE_PATH}"
 
 # install core config
 install -vDm "${KOMODO_PERMS_NORMAL}" "${CORE_DEFAULT_CONFIG_PATH}" "${CORE_CONFIG_PATH}"
@@ -460,9 +470,10 @@ for key in \
   KOMODO_SHARE_DIR \
   KOMODO_USER \
   KOMODO_GROUP \
-  KOMODO_COMPOSE_YAML_FILE \
-  KOMODO_DEFAULT_COMPOSE_YAML_OVERRIDE_FILE \
-  KOMODO_COMPOSE_YAML_OVERRIDE_FILE
+  KOMODO_COMPOSE_YAML_PATH \
+  KOMODO_DEFAULT_COMPOSE_YAML_OVERRIDE_PATH \
+  KOMODO_COMPOSE_YAML_OVERRIDE_PATH \
+;
 do
   value="${!key}"
   update_env_key "${key}" "${value}" "${INITIALIZE_KOMODO_ENV_FILE}"
