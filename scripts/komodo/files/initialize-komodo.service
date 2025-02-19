@@ -6,6 +6,7 @@ Wants=network-online.target
 [Service]
 Type=oneshot
 StandardOutput=journal+console
+EnvironmentFile=/usr/share/komodo/default.env
 ExecStart=/usr/share/komodo/initialize_komodo.sh
 [Install]
 WantedBy=multi-user.target

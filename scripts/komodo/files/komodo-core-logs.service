@@ -6,6 +6,7 @@ Requires=komodo-core-up.service
 [Service]
 Type=exec
 StandardOutput=console
+EnvironmentFile=/usr/share/komodo/default.env
 WorkingDirectory=/etc/komodo/core
 ExecStart=/usr/bin/docker compose -p komodo logs -f
 
