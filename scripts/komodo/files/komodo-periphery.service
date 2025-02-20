@@ -4,7 +4,7 @@ After=docker.service
 Requires=docker.service
 
 [Service]
-Type=oneshot
+Type=exec
 EnvironmentFile=/etc/komodo/periphery/periphery.env
 WorkingDirectory=${KOMODO_CONFIG_DIR_PERIPHERY}
 ExecStart=/usr/bin/periphery --config-path ${PERIPHERY_CONFIG_PATH}
