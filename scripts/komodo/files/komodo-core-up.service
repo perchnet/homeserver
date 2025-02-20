@@ -1,0 +1,18 @@
+[Unit]
+Description=Bring up the Komodo Core service with docker compose
+After=docker.service
+Requires=docker.service
+ConditionPathExists=!/etc/komodo/core/started
+
+[Service]
+Type=oneshot
+Restart=on-failure
+StandardOutput=journal
+StandardError=journal
+EnvironmentFile=/usr/share/komodo/default.env
+WorkingDirectory=${KOMODO_CONFIG_DIR_CORE}
+ExecStart=/usr/bin/docker compose -p komodo -f ${KOMODO_COMPOSE_YAML_PATH} -f ${KOMODO_COMPOSE_YAML_OVERRIDE_PATH} --env-file ${KOMODO_CORE_ENV_FILE} up -d
+ExecStartPost=/usr/bin/touch /etc/komodo/core/started
+
+[Install]
+WantedBy=multi-user.target

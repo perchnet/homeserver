@@ -84,7 +84,7 @@ jobs:
           ;;
           *)
             primary_tag="$(date '+%s')"
-            ref_tag="$(date r'+%s')"
+            ref_tag="$(date '+%s')"
           ;;
           esac
           echo "primary_tag=${primary_tag}" | tee -a $GITHUB_OUTPUT

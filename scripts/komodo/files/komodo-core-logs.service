@@ -1,0 +1,14 @@
+[Unit]
+Description=Follow Komodo Core logs
+After=komodo-core-up.service
+Requires=komodo-core-up.service
+
+[Service]
+Type=exec
+StandardOutput=console
+EnvironmentFile=/usr/share/komodo/default.env
+WorkingDirectory=/etc/komodo/core
+ExecStart=/usr/bin/docker compose -p komodo logs -f
+
+[Install]
+WantedBy=multi-user.target

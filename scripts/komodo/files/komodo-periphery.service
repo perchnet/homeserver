@@ -1,0 +1,15 @@
+[Unit]
+Description=Start the Komodo Periphery service
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=exec
+EnvironmentFile=/etc/komodo/periphery/periphery.env
+WorkingDirectory=${KOMODO_CONFIG_DIR_PERIPHERY}
+ExecStart=/usr/bin/periphery --config-path ${PERIPHERY_CONFIG_PATH}
+Restart=on-failure
+TimeoutStartSec=0
+
+[Install]
+WantedBy=multi-user.target
